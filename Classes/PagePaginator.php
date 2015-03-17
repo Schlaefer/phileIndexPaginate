@@ -43,7 +43,7 @@ class PagePaginator {
 		if ($input) {
 			$input--; // norm to base 0 index
 			$first = $itemsPerPage * $input;
-			if (isset($items[$first])) {
+			if (count($items) - 1 >= $first) {
 				$current = $input;
 			} else {
 				return false;
