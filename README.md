@@ -26,7 +26,7 @@ $config['plugins']['siezi\\phileIndexPaginate'] = ['active' => true];
 ### 3. Start: Simple Blog Example ###
 
 - Create a folder e.g. `content/blog` 
-- Put an *empty* `index.md` into it
+- Put an *empty* `index.md` into it (the empty index file tells the plugin to paginate the folder content)
 - Put all your postings into it and blog along
 
 ### 4. Config ###
