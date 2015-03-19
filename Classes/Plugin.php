@@ -13,10 +13,10 @@ class Plugin extends AbstractPlugin implements EventObserverInterface {
 
     protected $registeredEvents = [
       'request_uri' => 'onRequestUri',
-      'before_parse_content' => 'render',
+      'before_parse_content' => 'onBeforeParseContent',
     ];
 
-    protected $active = false;
+    protected $active = true;
 
     protected $page;
 
@@ -32,74 +32,55 @@ class Plugin extends AbstractPlugin implements EventObserverInterface {
     }
 
     protected function onRequestUri($data) {
-        $page = $this->indexPage($data['uri']);
-        if (!$page) {
-            return;
-        }
-
-        $this->active = true;
-        $this->page = $page;
         $this->settings['uri'] = $data['uri'];
-
-        if (empty($this->settings['templateBasePath'])) {
-            $this->settings['templateBasePath'] = $this->getPluginPath();
-        }
     }
 
-    protected function indexPage($pageId) {
-        // @todo 1.5
-        $repository = new Page();
-        $page = $repository->findByPath($pageId);
-        if (!$page) {
-            return false;
-        }
-        $content = str_replace(["\n", "\r"], '', $page->getContent());
-        if (!empty($content)) {
-            return false;
-        }
-        if ($this->isIndexPage($page)) {
-            return $page;
-        }
-        return false;
-    }
-
-    // @todo 1.5
-    protected function isIndexPage($page) {
-        return (bool)preg_match('/\/index' . CONTENT_EXT . '$/', $page->getFilePath());
-    }
-
-    protected function render($data) {
+    protected function onBeforeParseContent($data) {
         if (!$this->active) {
             return;
         }
-        // avoid recursion on index file @todo 1.5
-        $this->active = false;
+		// avoid recursion on index file @todo 1.5
+		$this->active = false;
 
         $repository = new Page();
-        $pages = $repository->findAll(['pages_order' => $this->settings['order']]);
+		$page = $repository->findByPath($this->settings['uri']);
+		// @todo 1.5 get raw content end remove <p> in regex
+		$content = $page->getContent();
+		$regex = '/(<p>)?\(folder-index: current\)(<\/p>)?/';
+		if (!preg_match($regex, $content)) {
+			return;
+		}
 
-        $folder = dirname($this->page->getFilePath());
-        $pages = array_filter($pages, function($page) use ($folder) {
-            // ignore index file @todo 1.5
-            if ($this->isIndexPage($page)) {
-                return false;
-            }
-            return dirname($page->getFilePath()) === $folder;
-        });
+		if (empty($this->settings['templateBasePath'])) {
+			$this->settings['templateBasePath'] = $this->getPluginPath();
+		}
 
-        $paginator = Paginator::build($pages, $this->settings['itemsPerPage']);
-        $out = (new Renderer($this->settings))->render($paginator);
+		$current = $page->getFilePath();
+		$folder = dirname($current);
+		$pages = $repository->findAll(['pages_order' => $this->settings['order']]);
+		$pages = array_filter($pages, function($page) use ($current, $folder) {
+			$path = $page->getFilePath();
+			if ($current === $path) {
+				return false;
+			}
+			return dirname($path) === $folder;
+		});
 
-        if (!$out) {
-            // @todo 1.5
-            Utility::redirect(Utility::getBaseUrl() . '/' . $this->page->getUrl(), 301);
-        }
+		$paginator = Paginator::build($pages, $this->settings['itemsPerPage']);
+		$out = (new Renderer($this->settings))->render($paginator);
 
-        $vars = Registry::get('templateVars');
-        $vars['paginator'] = $paginator;
-        Registry::set('templateVars', $vars);
+		if (!$out) {
+			// @todo 1.5
+			Utility::redirect(Utility::getBaseUrl() . '/' . $this->page->getUrl(), 301);
+		}
 
-        $data['page']->setContent($out);
+		$vars = Registry::get('templateVars');
+		$vars['paginator'] = $paginator;
+		Registry::set('templateVars', $vars);
+
+		$out = preg_replace($regex, $out, $content);
+
+		$data['page']->setContent($out);
     }
 
     // @todo 1.5

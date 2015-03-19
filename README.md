@@ -23,11 +23,9 @@ After you have installed the plugin. You need to add the following line to your 
 $config['plugins']['siezi\\phileIndexPaginate'] = ['active' => true];
 ```
 
-### 3. Start: Simple Blog Example ###
+### 3. Start ###
 
-- Create a folder e.g. `content/blog` 
-- Put an *empty* `index.md` into it (the empty index file tells the plugin to paginate the folder content)
-- Put all your postings into it and blog along
+Put `(folder-index: current)` on a page (e.g. `index.md`). In that place the paginated folder will be displayed.
 
 ### 4. Config ###
 
