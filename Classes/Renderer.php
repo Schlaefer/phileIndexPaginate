@@ -2,7 +2,7 @@
 
 namespace Phile\Plugin\Siezi\PhileIndexPaginate;
 
-class PagePaginator {
+class Renderer {
 
     protected $settings = [];
 
@@ -10,10 +10,10 @@ class PagePaginator {
 
     public function __construct($settings) {
         $this->settings = $settings;
+        return $this;
     }
 
-    public function render($pages) {
-        $paginator = $this->getPaginator($pages);
+    public function render(array $paginator) {
         if (!$paginator) {
             return false;
         }
@@ -33,32 +33,6 @@ class PagePaginator {
 
         $out .= $this->buildNavigation($paginator);
         return $out;
-    }
-
-    protected function getPaginator($items) {
-        $current = 0;
-        $itemsPerPage = $this->settings['itemsPerPage'];
-
-        $input = filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
-		if ($input) {
-			$input--; // norm to base 0 index
-			$first = $itemsPerPage * $input;
-			if (count($items) - 1 >= $first) {
-				$current = $input;
-			} else {
-				return false;
-			}
-		}
-
-        $chunks = array_chunk($items, $itemsPerPage);
-
-        $isFirst = $current === 0;
-        $isLast = $current === count($chunks) - 1;
-        $items = $chunks[$current];
-
-        $current++; // externally we use base 1 index
-
-        return compact('isFirst', 'isLast', 'current', 'items');
     }
 
     protected function buildNavigation(array $paginator) {
@@ -83,7 +57,7 @@ class PagePaginator {
         return $out;
     }
 
-    protected function renderTemplate($template, $vars) {
+    protected function renderTemplate($template, array $vars = []) {
         $template = $this->settings['templates'][$template];
         if (strpos($template, 'file:') === 0) {
             $options = ['base' => $this->settings['templateBasePath']];

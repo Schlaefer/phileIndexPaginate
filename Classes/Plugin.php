@@ -3,6 +3,7 @@
 namespace Phile\Plugin\Siezi\PhileIndexPaginate;
 
 use Phile\Core\Event;
+use Phile\Core\Registry;
 use Phile\Core\Utility;
 use Phile\Plugin\AbstractPlugin;
 use Phile\Gateway\EventObserverInterface;
@@ -86,13 +87,17 @@ class Plugin extends AbstractPlugin implements EventObserverInterface {
             return dirname($page->getFilePath()) === $folder;
         });
 
-        $paginator = new PagePaginator($this->settings);
-        $out = $paginator->render($pages);
+        $paginator = Paginator::build($pages, $this->settings['itemsPerPage']);
+        $out = (new Renderer($this->settings))->render($paginator);
 
         if (!$out) {
             // @todo 1.5
             Utility::redirect(Utility::getBaseUrl() . '/' . $this->page->getUrl(), 301);
         }
+
+        $vars = Registry::get('templateVars');
+        $vars['paginator'] = $paginator;
+        Registry::set('templateVars', $vars);
 
         $data['page']->setContent($out);
     }
