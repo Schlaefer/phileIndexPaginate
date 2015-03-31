@@ -52,6 +52,9 @@ class Plugin extends AbstractPlugin implements EventObserverInterface
 
 		$repository = new Page();
 		$page = $repository->findByPath($this->settings['uri']);
+		if (empty($page)) {
+			return;
+		}
 		// @todo 1.5 get raw content end remove <p> in regex
 		$content = $page->getContent();
 		$regex = '/(<p>)?\(folder-index:\s+(?P<type>\S*?)\)(<\/p>)?/';
