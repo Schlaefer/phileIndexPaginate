@@ -11,6 +11,9 @@ abstract class IteratorAbstract extends \FilterIterator
 
 	public function __construct($pages, $folder)
 	{
+		// @todo 1.5 remove; fixed in Phile 1.5
+		$folder = str_replace('//', '/', $folder);
+
 		$this->folderPath = $folder;
 		$this->dirname = dirname($this->folderPath);
 		parent::__construct($pages);
