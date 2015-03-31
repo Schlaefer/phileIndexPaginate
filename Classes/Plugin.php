@@ -98,6 +98,7 @@ class Plugin extends AbstractPlugin implements EventObserverInterface
 		$vars['paginator'] = $paginator;
 		Registry::set('templateVars', $vars);
 
+		$out = str_replace('\\', '\\\\', $out);
 		$out = preg_replace($regex, $out, $content);
 
 		$data['page']->setContent($out);
