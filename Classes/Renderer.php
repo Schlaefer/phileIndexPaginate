@@ -26,10 +26,13 @@ class Renderer
 			$out[] = $this->renderTemplate(
 				'content',
 				[
+					// @todo 1.5
+					'base_url' => Utility::getBaseUrl(),
 					'current_page' => $page,
 					'meta' => $page->getMeta(),
 					'content' => $page->getContent(),
-				]);
+				]
+			);
 		}
 
 		$divider = $this->settings['templates']['divider'];
