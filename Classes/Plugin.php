@@ -20,7 +20,7 @@ class Plugin extends AbstractPlugin implements EventObserverInterface
 		'before_parse_content' => 'onBeforeParseContent',
 	];
 
-	protected $active = true;
+	protected $active = false;
 
 	protected $page;
 
@@ -40,6 +40,7 @@ class Plugin extends AbstractPlugin implements EventObserverInterface
     protected function onRequestUri($data)
     {
         $this->settings['uri'] = $data['uri'];
+		$this->active = true;
     }
 
 	protected function onBeforeParseContent($data)
