@@ -17,7 +17,7 @@ php composer.phar require siezi/phile-index-paginate:*
 
 ### 2. Activation
 
-After you have installed the plugin. You need to add the following line to your `config.php` file:
+After you have installed the plugin. You need to add the following line before other plugins to your `config.php` file:
 
 ```php
 $config['plugins']['siezi\\phileIndexPaginate'] = ['active' => true];
@@ -26,6 +26,8 @@ $config['plugins']['siezi\\phileIndexPaginate'] = ['active' => true];
 ### 3. Start ###
 
 Put `(folder-index: current)` on a page (e.g. `index.md`). In that place the paginated folder will be displayed.
+
+Use `(folder-index: recursive)` to include all subfolder and pages.
 
 ### 4. Config ###
 
