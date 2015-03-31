@@ -2,6 +2,8 @@
 
 namespace Phile\Plugin\Siezi\PhileIndexPaginate;
 
+use Phile\Core\Utility;
+
 class Renderer
 {
 
