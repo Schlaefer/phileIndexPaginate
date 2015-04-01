@@ -8,10 +8,15 @@ class RecursiveIterator extends IteratorAbstract
 	public function check($page)
 	{
 		$path = $page->getFilePath();
-		$dirname = dirname($path);
-		if ($dirname === $this->dirname) {
+
+		if (basename($path) === 'index' . CONTENT_EXT) {
+			return false;
+		}
+
+		$folder = dirname($path);
+		if ($folder === $this->dirname) {
 			return true;
-		} elseif (strpos($dirname, $this->dirname) === 0) {
+		} elseif (strpos($folder, $this->dirname) === 0) {
 			return true;
 		}
 
