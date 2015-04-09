@@ -6,7 +6,6 @@
   "homepage": "https://github.com/Schlaefer/phileIndexPaginate",
   "keywords": ["phile", "pagination"],
   "require": {
-    "phile-cms/phile": ">=1.4.0",
-    "phile-cms/plugin-installer-plugin": ">=1.0.2"
+    "phile-cms/phile": ">=1.5.0"
   }
 }

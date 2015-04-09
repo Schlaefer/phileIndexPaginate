@@ -2,112 +2,83 @@
 
 namespace Phile\Plugin\Siezi\PhileIndexPaginate;
 
-use Phile\Core\Event;
-use Phile\Core\Registry;
-use Phile\Core\Utility;
 use Phile\Exception\PluginException;
-use Phile\Plugin\AbstractPlugin;
-use Phile\Gateway\EventObserverInterface;
 use Phile\Plugin\Siezi\PhileIndexPaginate\Iterator\CurrentIterator;
 use Phile\Plugin\Siezi\PhileIndexPaginate\Iterator\RecursiveIterator;
 use Phile\Repository\Page;
 
-class Plugin extends AbstractPlugin implements EventObserverInterface
+class Plugin extends \Phile\Plugin\Siezi\PhileMagicPlugin\Plugin
 {
 
-	protected $registeredEvents = [
-		'request_uri' => 'onRequestUri',
-		'before_parse_content' => 'onBeforeParseContent',
+    protected $types = ['current', 'recursive'];
+
+	protected $events = [
+        'config_loaded' => 'onConfig',
+        'after_resolve_page' => 'onGetPage',
+        'template_engine_registered' => 'onSetTemplateVars'
 	];
 
-	protected $active = false;
+    protected $paginator;
 
-	protected $page;
-
-	public function __construct()
-	{
-		foreach ($this->registeredEvents as $event => $method) {
-			Event::registerEvent($event, $this);
-		}
-	}
-
-	public function on($eventKey, $data = null)
-	{
-		$method = $this->registeredEvents[$eventKey];
-		$this->{$method}($data);
-	}
-
-    protected function onRequestUri($data)
-    {
-        $this->settings['uri'] = $data['uri'];
-		$this->active = true;
+    protected function onConfig() {
+        if (empty($this->settings['templateBasePath'])) {
+            $this->settings['templateBasePath'] = $this->getPluginPath();
+        }
     }
 
-	protected function onBeforeParseContent($data)
-	{
-		if (!$this->active) {
-			return;
-		}
-		// avoid recursion on index file @todo 1.5
-		$this->active = false;
+    protected function onGetPage($data) {
+        $page = $data['page'];
+        $this->settings['uri'] = $page->getUrl();
 
-		$repository = new Page();
-		$page = $repository->findByPath($this->settings['uri']);
-		if (empty($page)) {
-			return;
-		}
 		// @todo 1.5 get raw content end remove <p> in regex
 		$content = $page->getContent();
 		$regex = '/(<p>)?\(folder-index:\s+(?P<type>\S*?)\)(<\/p>)?/';
+
 		if (!preg_match($regex, $content, $matches)) {
 			return;
 		}
-		if (empty($matches['type']) || !in_array($matches['type'], ['current', 'recursive'])
-		) {
-			throw new PluginException("folder-index type not recognized'");
+
+		if (empty($matches['type']) || !in_array($matches['type'], $this->types)) {
+			throw new PluginException("folder-index type not recognized");
 		}
 		$type = $matches['type'];
 
-		if (empty($this->settings['templateBasePath'])) {
-			$this->settings['templateBasePath'] = $this->getPluginPath();
-		}
+        $pages = $this->getAllPages($page, $type);
+		$paginator = Paginator::build($pages, $this->settings['itemsPerPage']);
+        $out = (new Renderer($this->settings))->render($paginator);
 
-		$pages = $repository->findAll(['pages_order' => $this->settings['order']]);
-		$pages = new \ArrayIterator($pages);
-		if ($type === 'recursive') {
-			$iterator = new RecursiveIterator($pages, $page->getFilePath());
-		} else {
-			$iterator = new CurrentIterator($pages, $page->getFilePath());
+		if (empty($out)) {
+            throw new PluginException('folder-index rendering failed');
 		}
-		$results = [];
-		foreach ($iterator as $page) {
-			$results[] = $page;
-		}
-
-		$paginator = Paginator::build($results,
-			$this->settings['itemsPerPage']);
-		$out = (new Renderer($this->settings))->render($paginator);
-
-		if (!$out) {
-			// @todo 1.5
-			Utility::redirect(Utility::getBaseUrl() . '/' . $this->page->getUrl(),
-				301);
-		}
-
-		$vars = Registry::get('templateVars');
-		$vars['paginator'] = $paginator;
-		Registry::set('templateVars', $vars);
 
 		$out = str_replace('\\', '\\\\', $out);
 		$out = preg_replace($regex, $out, $content);
+        $data['page']->setContent($out);
 
-		$data['page']->setContent($out);
+        $this->paginator = $paginator;
 	}
 
-	// @todo 1.5
-	protected function getPluginPath($subPath = '')
-	{
-		return PLUGINS_DIR . 'siezi/phileIndexPaginate/' . $subPath;
-	}
+    protected function getAllPages($rootPage, $type) {
+        $repository = new Page();
+        $pages = $repository->findAll(['pages_order' => $this->settings['order']]);
+        $pages = new \ArrayIterator($pages);
+        if ($type === 'recursive') {
+            $iterator = new RecursiveIterator($pages, $rootPage->getFilePath());
+        } else {
+            $iterator = new CurrentIterator($pages, $rootPage->getFilePath());
+        }
+        $results = [];
+        foreach ($iterator as $subPage) {
+            $results[] = $subPage;
+        }
+        return $results;
+    }
+
+    protected function onSetTemplateVars($data) {
+        if (empty($this->paginator)) {
+            return;
+        }
+        $data['data']['paginator'] = $this->paginator;
+    }
 
 }
