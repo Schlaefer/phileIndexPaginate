@@ -3,11 +3,12 @@
 namespace Phile\Plugin\Siezi\PhileIndexPaginate;
 
 use Phile\Exception\PluginException;
+use Phile\Plugin\AbstractPlugin;
 use Phile\Plugin\Siezi\PhileIndexPaginate\Iterator\CurrentIterator;
 use Phile\Plugin\Siezi\PhileIndexPaginate\Iterator\RecursiveIterator;
 use Phile\Repository\Page;
 
-class Plugin extends \Phile\Plugin\Siezi\PhileMagicPlugin\Plugin
+class Plugin extends AbstractPlugin
 {
 
     protected $types = ['current', 'recursive'];
