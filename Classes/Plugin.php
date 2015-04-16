@@ -16,10 +16,17 @@ class Plugin extends AbstractPlugin
 	protected $events = [
         'config_loaded' => 'onConfig',
         'after_resolve_page' => 'onGetPage',
-        'template_engine_registered' => 'onSetTemplateVars'
+        'template_engine_registered' => 'onSetTemplateVars',
+        'after_render_template' => 'onAfterRenderTemplate'
 	];
 
+    protected $settings = [
+        'regex' => '/(<p>)?\(folder-index:\s+(?P<type>\S*?)\)(<\/p>)?/'
+    ];
+
     protected $paginator;
+
+    protected $html;
 
     protected function onConfig() {
         if (empty($this->settings['templateBasePath'])) {
@@ -31,11 +38,9 @@ class Plugin extends AbstractPlugin
         $page = $data['page'];
         $this->settings['uri'] = $page->getUrl();
 
-		// @todo 1.5 get raw content end remove <p> in regex
 		$content = $page->getContent();
-		$regex = '/(<p>)?\(folder-index:\s+(?P<type>\S*?)\)(<\/p>)?/';
 
-		if (!preg_match($regex, $content, $matches)) {
+		if (!preg_match($this->settings['regex'], $content, $matches)) {
 			return;
 		}
 
@@ -46,18 +51,27 @@ class Plugin extends AbstractPlugin
 
         $pages = $this->getAllPages($page, $type);
 		$paginator = Paginator::build($pages, $this->settings['itemsPerPage']);
-        $out = (new Renderer($this->settings))->render($paginator);
+        $html = (new Renderer($this->settings))->render($paginator);
 
-		if (empty($out)) {
+		if (empty($html)) {
             throw new PluginException('folder-index rendering failed');
 		}
 
-		$out = str_replace('\\', '\\\\', $out);
-		$out = preg_replace($regex, $out, $content);
-        $data['page']->setContent($out);
-
+        $this->html = $html;
         $this->paginator = $paginator;
 	}
+
+    protected function onAfterRenderTemplate($data) {
+        if (empty($this->html)) {
+            return;
+        }
+
+        $html = $this->html;
+        $html = str_replace('\\', '\\\\', $html);
+        $html = preg_replace($this->settings['regex'], $html, $data['output']);
+        $data['output'] = $html;
+
+    }
 
     protected function getAllPages($rootPage, $type) {
         $repository = new Page();
