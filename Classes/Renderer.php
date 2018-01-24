@@ -77,11 +77,21 @@ class Renderer
 			$template = mb_substr($template, 5);
 		} else {
 			$renderer = $this->getRenderer('string');
+			$loader = $renderer->getLoader();
+			$loader->setTemplate($template, $template);
 		}
 
 		return $renderer->render($template, $vars);
 	}
 
+	/**
+	 * Get a Twig renderer
+	 * 
+	 * @param String $type "file" for filesystem or string for array loader
+	 * @param Array $options passed as options in Twig loader
+	 * 
+	 * @return \Twig_Environment Twig render environment
+	 */
 	protected function getRenderer($type, array $options = [])
 	{
 		if (isset($this->renderer[$type])) {
@@ -90,7 +100,7 @@ class Renderer
 		if ($type === 'file') {
 			$loader = new \Twig_Loader_Filesystem($options['base']);
 		} else {
-			$loader = new \Twig_Loader_String();
+			$loader = new \Twig_Loader_Array();
 		}
 		$this->renderer[$type] = new \Twig_Environment($loader,
 			['autoescape' => false]);
