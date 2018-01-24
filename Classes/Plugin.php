@@ -82,7 +82,11 @@ class Plugin extends AbstractPlugin
     {
         $repository = new Page();
         $pages = $repository->findAll(['pages_order' => $this->settings['order']]);
-        $pages = new \ArrayIterator($pages);
+        if (version_compare(PHILE_VERSION, '1.6.0', '<')) {
+            $pages = new \ArrayIterator($pages);
+        } else {
+            $pages = $pages->getIterator();
+        }
         if ($type === 'recursive') {
             $iterator = new RecursiveIterator($pages, $rootPage->getFilePath());
         } else {
